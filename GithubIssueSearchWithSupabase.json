@@ -1,0 +1,541 @@
+{
+  "name": "GithubIssueSearchWithSupabase",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1860,
+        -120
+      ],
+      "id": "09f60290-e3b8-458d-876e-711a5d28d85e",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        -980,
+        80
+      ],
+      "id": "4e39900c-f27a-4b80-ba9a-d68a0c9d8418",
+      "name": "Embeddings HuggingFace Inference",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "rdu6XdyShHngUHb9",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.body }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "url",
+                "value": "={{ $json.htmlUrl }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.title }}"
+              },
+              {
+                "name": "issueID",
+                "value": "={{ $json.issueID }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        80
+      ],
+      "id": "cba2316e-5a6a-45fa-aa52-b50bf502e134",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -140,
+        -180
+      ],
+      "id": "3de9666a-67c3-4197-8a61-433297081995",
+      "name": "When chat message received",
+      "webhookId": "ea51f341-1130-4b6d-a9f0-d82a7ffc6cc9"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        300,
+        40
+      ],
+      "id": "a039eb34-f37d-45ff-bee0-93bab5ad6695",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "model": "qwen-2.5-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        140,
+        40
+      ],
+      "id": "f5eda25f-89aa-4a70-b9ea-131d224a30a5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Au8XVjG3cGto6RUA",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 3000,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        240
+      ],
+      "id": "6aebb34a-74b6-4278-bc98-75576e1a2b07",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "model": "mixtral-8x7b-32768",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        580,
+        400
+      ],
+      "id": "4c66ef3d-c205-48b3-a06d-3c6cdcfc1168",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "Au8XVjG3cGto6RUA",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "search_issue",
+        "description": "Call this tool to search for issues. Don't do any analysis or generate content of your own. Give information only from the data in this store \nThe data in this store contains the following information \n1) pageContent - this contains the detailed information of issued\n2) title - Title of the issue\n3) url - URL of the issue"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        520,
+        40
+      ],
+      "id": "4e10e0c8-eec7-453a-9034-4df347771ba3",
+      "name": "Search Issue"
+    },
+    {
+      "parameters": {
+        "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        360,
+        380
+      ],
+      "id": "8265a128-28d5-4277-a9e7-b868991b98ca",
+      "name": "Embeddings HuggingFace Inference3",
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "rdu6XdyShHngUHb9",
+          "name": "HuggingFaceApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 1\nThis step will fetch all github issues and store in Supabase vector store. The following pipeline is used to achieve this\n1) Get Github issues\n2) Extract the required fields\n3) Clean up to discard unwanted text\n4) Feed it to a vector store node to store convert the text into vector embeddings before storage\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFollowing configurations can be changed\n1) Get Github issues - Modify the REPO Owner and Name as per your github repository. Configure the filters as per your requirement\n2) Map fields - Extract only the fields that will be helpful for further analysis\n3) Clean up - Modify the regex if any unwanted text needs to be removed before storing\n4) Vector Store - Create credential for supabase. An initial setup for supabase is required. The documentation is available [here](https://supabase.com/docs/guides/ai/langchain?database-method=sql). Make sure the table name used is correctly configured in the n8n node\n5) Default dataloader is configured with the fields that are stored in the vector store",
+        "height": 1040,
+        "width": 1600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        -400
+      ],
+      "id": "19bd1b82-562c-4c70-8a5c-70fa092f84ec",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resource": "repository",
+        "owner": {
+          "__rl": true,
+          "value": "",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "",
+          "mode": "name"
+        },
+        "returnAll": true,
+        "getRepositoryIssuesFilters": {
+          "labels": "Bug",
+          "since": "={{ new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString() }}",
+          "state": "closed"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        -1640,
+        -120
+      ],
+      "id": "afff0d8a-5bfa-458c-b6e2-8c4891a952ac",
+      "name": "Get Github Issues",
+      "credentials": {
+        "githubApi": {
+          "id": "2yRBqav2uahP1pas",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfad7ea3-a7cd-494d-8eda-f3c041929229",
+              "name": "body",
+              "value": "={{ $json.body }}",
+              "type": "string"
+            },
+            {
+              "id": "ad10eade-f68c-46e5-beb0-1e84366362a8",
+              "name": "htmlUrl",
+              "value": "={{ $json.html_url }}",
+              "type": "string"
+            },
+            {
+              "id": "3e9cb70f-b969-43bf-9b97-2a4b4bf2a2ce",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "b187297f-daa9-4d32-bd54-41e4926779af",
+              "name": "issueID",
+              "value": "={{ $json.number }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1380,
+        -120
+      ],
+      "id": "95fa99eb-c557-44ad-9f67-3ab1b3fa9a78",
+      "name": "Map issue id, body, url, title"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  const regexForComments = /<!--[\\s\\S]*?-->/g;\n  const regexToRemoveChecklist = /^.{0,10}-\\s*\\[(x| )\\].*$/gm;\n\n  const cleanedText = item.json.body.replace(regexForComments, '').replace(regexToRemoveChecklist, '');\n  item.json.body = cleanedText\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1140,
+        -120
+      ],
+      "id": "6e7c7127-04a8-4583-a1b6-0661af4a867e",
+      "name": "Clean the body to remove unwanted text"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "githubissues",
+          "mode": "list",
+          "cachedResultName": "githubissues"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        -120
+      ],
+      "id": "efb775d3-3e57-42d0-b563-fa5412c7e0c7",
+      "name": "Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dotx6wp5Lp45mHCi",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Step 2\nThis step will fetch search the vector store for similar issues based on the chat trigger. The following pipeline is used to achieve this\n1) AI Search Assistant - This AI assitant is configured to use a tool called Search Issue to fetch all similar issues to the user query and summarise the details\n2) Search Issue - This is Question Answer tool that uses the Github Vector Store to search for the vector embeddings similar to the user query\n3) Github Vector Store - This is Supabase Vector Store. Make sure that the query function match_githubissues has been setup in supabase and correct tables are referenced\n4) Embeddings and Chat Model - This uses Huggingface embeddings with size=384 and distance=cosine. You can modify as per the requirement\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+        "height": 1040,
+        "width": 1600,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        -400
+      ],
+      "id": "a8cd5b60-ec83-48da-abc9-cf7afae1b29e",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "githubissues",
+          "mode": "list",
+          "cachedResultName": "githubissues"
+        },
+        "options": {
+          "queryName": "match_githubissues"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        340,
+        220
+      ],
+      "id": "e76d2532-af8a-44b0-b360-1797f99c1f33",
+      "name": "Github Issues Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dotx6wp5Lp45mHCi",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}\nOnly use vector store knowledge to answer the question. Don't make anything up. If you don't know the answer, tell the user that you don't know.\nJust give the output of vector store as it is. Don't do any further analysis.",
+        "options": {
+          "systemMessage": "=## **Overview**\nYou are a search assistant for issue tracking system. Your role is to help developers search and summarize for issues similar to their query. You have access to a tool to facilitate this task.\n\n## **Tools & Their Functions**\n\n### **1. Search Issue**\n**Purpose:**  \nSearch for stored issues from the store.\n\n**Usage:**\n- When a user requests to search for an issue. The search query {{ $json.chatInput }} will have either title or description of the query\n- Looks for issues similar to the user query. You may get more than one issues in the response which in in json format. Extract pageContent field and provide details on the explanation of change\n\n\n## **Tool Interaction Flow**\n\n1. **Searching Issues:** \n   - Use **Search Issue** when a user requests to search for an issue\n\n### **Final Notes**\n- Ensure all tool interactions follow the correct sequence.\n- Ensure that the tool is always used\n- Always answer based on facts. Do not make up your own answer\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        200,
+        -180
+      ],
+      "id": "43d142fd-9dbb-459b-8e35-b58b0f432fdc",
+      "name": "AI Search Assistant"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Github Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Search Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Search Assistant",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Search Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search Issue",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Issue": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Search Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings HuggingFace Inference3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Github Issues Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Github Issues": {
+      "main": [
+        [
+          {
+            "node": "Map issue id, body, url, title",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map issue id, body, url, title": {
+      "main": [
+        [
+          {
+            "node": "Clean the body to remove unwanted text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean the body to remove unwanted text": {
+      "main": [
+        [
+          {
+            "node": "Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github Issues Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Search Issue",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "98c9bb38-dbf5-46db-ae0f-3557c3f3d82c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b229c9a129a49cc78e21e7f6e65be625850967828e8c77a8f82738e7c8461afc"
+  },
+  "id": "k8DftHfihLFP4qjF",
+  "tags": []
+}
